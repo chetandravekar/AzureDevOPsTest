@@ -8,7 +8,9 @@ on:
     branches:
       - master
 
-jobs:
+stages:
+- stage: Build
+  jobs:
   build-and-deploy:
     runs-on: windows-latest
 
@@ -33,3 +35,29 @@ jobs:
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_d98f5febca50497aa8c3831ab4f6a4d2 }}
         package: ${{env.DOTNET_ROOT}}/myapp 
+- stage: Test
+  jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@master
+
+    - name: Set up .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '2.1.804'
+
+    - name: Build with dotnet
+      run: dotnet build --configuration Release
+
+    - name: dotnet publish
+      run: dotnet publish -c Release -o ${{env.DOTNET_ROOT}}/myapp
+
+    - name: Deploy to Azure Web App
+      uses: azure/webapps-deploy@v1
+      with:
+        app-name: 'cd-azuredevops'
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AzureDevOpsUAT_PublishProfile }}
+        package: ${{env.DOTNET_ROOT}}/myapp
